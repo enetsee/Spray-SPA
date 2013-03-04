@@ -1,0 +1,31 @@
+@()
+<div id="wrap">
+    <div class="container" id="signinPanel">
+        <form class="form-signin form-horizontal" id="signinForm" action="/ajax/signin" method="post">
+            <fieldset>
+                <legend class="form-signin-heading">Sign in</legend>
+                <div class="control-group">
+                    <input class="input-block-level" type="text" id="signinEmail" name="email" placeholder="email address"/>
+                </div>
+                <div class="control-group">
+                    <input class="input-block-level"  type="password" id="signinPassword" name="password" placeholder="password"/>
+                </div>
+                <button class="btn btn-large btn-block btn-primary" type="submit">Sign in</button>
+                <div class="controls-group" style="margin-top: 10px;">
+                    <label class="checkbox"><input class="input-block-level" type="checkbox" id="signinRemember" name="remember"/>Remember</label>
+                </div>
+                <div class="validation-summary">
+                    <ul>
+                        <li style="display:none"></li>
+                    </ul>
+                </div>
+            </fieldset>
+            <hr>
+            <p class="muted pull-right">No account? <a href="/signup">Sign up</a></p>
+            <br>
+        </form>
+    </div> <!-- /container -->
+    <div id="push"></div>
+</div>
+@footer()
+@signinScripts()
