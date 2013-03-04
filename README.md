@@ -1,7 +1,7 @@
 Spray-SPA (Spray Single-Page Application)
 =========================================
 
-This project is intended to demonstrate how ot approach building a Spray based application which provides both a RESTful programmatic api and a 'user-focused' (ajax) api on which a client-side app can be built.
+This project is intended to demonstrate how to approach building a Spray based application which provides both a RESTful programmatic api and a 'user-focused' (ajax) api on which a client-side app can be built.
 
 I get the sense that there is a demand for this kind of thing; the [Play book](http://www.manning.com/hilton/) even has a chapter dedicated to single-page apps, but I would have thought this approach is a good fit for Spray too.
 
