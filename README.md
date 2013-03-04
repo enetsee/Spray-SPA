@@ -21,7 +21,7 @@ Further work
 ------------
 
 More account management features:
--	account activation using [Spray Client](https://github.com/spray/spray/wiki/spray-client) and a third-party API (e.g. [SendGrid])(http://sendgrid.com/))
+-	account activation using [Spray Client](https://github.com/spray/spray/wiki/spray-client) and a third-party API (e.g. [SendGrid](http://sendgrid.com/))
 -	account reset
 -	account suspension
 
