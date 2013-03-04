@@ -79,7 +79,7 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
                     }
                 }
 
-              }
+
             } ~ (path("signin") & post) {                                                          // ajax sign-in
               formFields('email,'password,'remember.as[Boolean]?) {
                 (email,password,remember) =>
@@ -106,11 +106,10 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
                 }
 
               }
-        //    }
+            }
           }
         }
       }
-
   }
 
 
