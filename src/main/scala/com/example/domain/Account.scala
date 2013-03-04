@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.pattern.ask
 import akka.util.Timeout
 
-import spray.http.DateTime
+import spray.http.{HttpIp, DateTime}
 import spray.json._
 import spray.json.{ JsObject, JsString, JsNumber }
 import spray.routing.authentication._
@@ -28,7 +28,7 @@ case class Account(
   , seriesToken: Option[String] = None, rememberToken: Option[String] = None                // remember me (http://jaspan.com/improved_persistent_login_cookie_best_practice)
   , loginCount: Int = 0, failedLoginCount: Int = 0, lockedOutUntil: Option[DateTime] = None // login failure
   , currentLoginAt: Option[DateTime] = None, lastLoginAt: Option[DateTime] = None           // login time
-  , currentLoginIp: Option[String] = None, lastLoginIp: Option[String] = None               // login IP address
+  , currentLoginIp: Option[HttpIp] = None, lastLoginIp: Option[HttpIp] = None               // login IP address
   , createdAt: Option[DateTime] = None, updatedAt: Option[DateTime] = None                  // record change
   , resetToken: Option[String] = None, resetRequestedAt: Option[DateTime] = None            // password reset
   )
@@ -60,7 +60,7 @@ trait AccountOps {
   private def accountUnlocked(account:Account) = account.lockedOutUntil.map(_ <= DateTime.now).getOrElse(true)
 
 
-  def authenticateAccount(email:String,password:Password,ipAddress:String) : Future[Authentication[Account]] =
+  def authenticateAccount(email:String,password:Password,ipAddress:Option[HttpIp]) : Future[Authentication[Account]] =
     retrieveAccountByEmail(email).map({
       case Some(account) =>
         if (Password.verify(password,account.password)  && accountUnlocked(account)) {
@@ -80,7 +80,7 @@ trait AccountOps {
   // The used token is removed from the database. A new token is generated, stored in database with the username and the same series identifier, and a new login cookie containing all three is issued to the user.
   // If the username and series are present but the token does not match, a theft is assumed.
   // The user receives a strongly worded warning and all of the user's remembered sessions are deleted.
-  def authenticateRememberMe(remember:RememberMeCookie[Long],ipAddress:String) : Future[Authentication[Account]] =
+  def authenticateRememberMe(remember:RememberMeCookie[Long],ipAddress:Option[HttpIp]) : Future[Authentication[Account]] =
     retrieveAccount(remember.id).map({
       case Some(account) =>
         (account.seriesToken.map(_ == remember.seriesToken).getOrElse(false) , account.rememberToken.map(_ == remember.rememberToken).getOrElse(false)) match {
@@ -105,38 +105,38 @@ trait AccountOps {
     })
 
   // Update account to reflect a successful sign in attempt
-  def updateAccountSignInSuccess(account:Account,ipAddress:String) : Account = account.copy(
+  def updateAccountSignInSuccess(account:Account,ipAddress:Option[HttpIp]) : Account = account.copy(
       loginCount = account.loginCount+1
       , lastLoginAt = account.currentLoginAt
       , currentLoginAt = Some(DateTime.now)
       , lastLoginIp = account.currentLoginIp
-      , currentLoginIp = Some(ipAddress)
+      , currentLoginIp = ipAddress
     )
 
   // Update account to reflect a failed sign in attempt
-  def updateAccountSignInFailure(account:Account,ipAddress:String) : Account = account.copy(
+  def updateAccountSignInFailure(account:Account,ipAddress:Option[HttpIp]) : Account = account.copy(
     failedLoginCount = account.failedLoginCount+1
     , lockedOutUntil = if (SiteSettings.AccountLockout && SiteSettings.AccountLockoutMaxAttempts < account.failedLoginCount + 1) Some(DateTime.now + (SiteSettings.AccountLockoutPeriod * 1000)) else None
     , lastLoginIp = account.currentLoginIp
-    , currentLoginIp = Some(ipAddress)
+    , currentLoginIp = ipAddress
   )
 
   // Update account to reflect a successful sign in attempt using a remember-me cookie
-  def updateAccountRememberMeSuccess(account:Account,ipAddress:String) : Account = account.copy(
+  def updateAccountRememberMeSuccess(account:Account,ipAddress:Option[HttpIp]) : Account = account.copy(
     loginCount = account.loginCount+1
     , lastLoginAt = account.currentLoginAt
     , currentLoginAt = Some(DateTime.now)
     , lastLoginIp = account.currentLoginIp
-    , currentLoginIp = Some(ipAddress)
+    , currentLoginIp = ipAddress
     , rememberToken =  Some(UUID.randomUUID().toString)
   )
 
   // Update account to reflect a failed sign in attempt using a remember-me cookie
-  def updateAccountRememberMeFailure(account:Account,ipAddress:String,lock:Boolean) : Account = account.copy(
+  def updateAccountRememberMeFailure(account:Account,ipAddress:Option[HttpIp],lock:Boolean) : Account = account.copy(
     failedLoginCount = account.failedLoginCount+1
     , lockedOutUntil = if (lock || (SiteSettings.AccountLockout && SiteSettings.AccountLockoutMaxAttempts < account.failedLoginCount + 1)) Some(DateTime.now + (SiteSettings.AccountLockoutPeriod * 1000)) else None
     , lastLoginIp = account.currentLoginIp
-    , currentLoginIp = Some(ipAddress)
+    , currentLoginIp = ipAddress
     , seriesToken = Some(UUID.randomUUID().toString)
     , rememberToken =  Some(UUID.randomUUID().toString)
   )

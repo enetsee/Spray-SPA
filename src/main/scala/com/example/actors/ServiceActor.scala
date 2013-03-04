@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorRef}
 import akka.pattern.CircuitBreakerOpenException
 import spray.routing._
 import spray.httpx.{SprayJsonSupport, TwirlSupport}
-import spray.http.{MediaTypes, StatusCodes}
+import spray.http.{HttpIp, MediaTypes, StatusCodes}
 
 
 import com.example.directives.{SessionCookieDirectives, RememberMeCookieDirectives, CustomMiscDirectives}
@@ -40,13 +40,14 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
             sessionCookie { session =>                                                              // Look for a session cookie
               complete{page(app())}
             } ~ rememberMeCookie { remember =>                                                       // No session cookie, look for a remember-me cookie
-
-              authenticate(authenticateRememberMe(remember,"")) { account =>                        // Authenticate sign-in attempt with remember-me cookie
-                setSession(SessionCookie(path=Some("/"))) {                                         // Set session cookie
-                  setRememberMe(RememberMeCookie(id=account.id.get,                                 // Set a  new remember me cookie with rolled token
-                    seriesToken=account.seriesToken.get,
-                    rememberToken=account.rememberToken.get,path=Some("/"))){
-                    complete{page(app())}
+              optionalClientIP { ipOpt =>
+                authenticate(authenticateRememberMe(remember,ipOpt)) { account =>                        // Authenticate sign-in attempt with remember-me cookie
+                  setSession(SessionCookie(path=Some("/"))) {                                         // Set session cookie
+                    setRememberMe(RememberMeCookie(id=account.id.get,                                 // Set a  new remember me cookie with rolled token
+                      seriesToken=account.seriesToken.get,
+                      rememberToken=account.rememberToken.get,path=Some("/"))){
+                      complete{page(app())}
+                    }
                   }
                 }
               }
@@ -78,10 +79,12 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
                     }
                 }
 
-              } ~ (path("signin") & post) {                                                          // ajax sign-in
-                formFields('email,'password,'remember.as[Boolean]?) {
-                  (email,password,remember) =>
-                    authenticate( authenticateAccount(email,ClearText(password),"") ) { account =>
+              }
+            } ~ (path("signin") & post) {                                                          // ajax sign-in
+              formFields('email,'password,'remember.as[Boolean]?) {
+                (email,password,remember) =>
+                  optionalClientIP { ipOpt =>
+                    authenticate( authenticateAccount(email,ClearText(password),ipOpt)) { account =>
                       setSession(SessionCookie(path=Some("/"))) {                                    // Set session cookie
                         conditional(remember.getOrElse(false),
                           setRememberMe(                                                             // Set remember-me cookie *if*  it was set on the sign-in form
@@ -93,7 +96,8 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
                         }
                       }
                     }
-                 }
+                  }
+               }
 
 
               } ~ (path("signout") & post ) {                                                        // sign-out
@@ -102,7 +106,7 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
                 }
 
               }
-            }
+        //    }
           }
         }
       }

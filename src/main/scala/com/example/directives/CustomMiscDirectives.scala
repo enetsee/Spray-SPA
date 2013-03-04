@@ -9,9 +9,8 @@ import shapeless.::
 import spray.routing.{Directive, Directive0,Route}
 import spray.routing.directives.{BasicDirectives,MiscDirectives}
 import BasicDirectives._
-import MiscDirectives.validate
-
-
+import MiscDirectives.{validate,clientIP}
+import spray.http.HttpIp
 
 
 trait CustomMiscDirectives{
@@ -25,6 +24,10 @@ trait CustomMiscDirectives{
     implicit def executor = vfm.executor
     vfm.value.unwrapFuture.flatMap { case check => validate(check,errorMsg) }
   }
+
+  lazy val optionalClientIP: Directive[Option[HttpIp] :: HNil] =
+    clientIP.map(Some(_) : Option[HttpIp]).recoverPF {case Nil => provide(None)}
+
 
 }
 

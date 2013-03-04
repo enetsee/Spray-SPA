@@ -2,13 +2,13 @@ package com.example
 package storage
 
 import java.util.UUID
-import spray.http.DateTime
-import domain.{DateTimeTypeMapper, Password, Account}
+import spray.http.{HttpIp, DateTime}
+import domain.{HttpIpTypeMapper, DateTimeTypeMapper, Password, Account}
 
 
 
 
-trait AccountStorage extends DateTimeTypeMapper {
+trait AccountStorage extends DateTimeTypeMapper with HttpIpTypeMapper {
   self: AccountStorage with Profile =>
 
   import profile.simple._
@@ -36,8 +36,8 @@ trait AccountStorage extends DateTimeTypeMapper {
     def lockedOutUntil = column[DateTime]("locked_out_until", O.Nullable)
     def currentLoginAt = column[DateTime]("current_login_at", O.Nullable)
     def lastLoginAt = column[DateTime]("last_login_at", O.Nullable)
-    def currentLoginIp = column[String]("current_login_ip", O.Nullable)
-    def lastLoginIp = column[String]("last_login_ip", O.Nullable)
+    def currentLoginIp = column[HttpIp]("current_login_ip", O.Nullable)
+    def lastLoginIp = column[HttpIp]("last_login_ip", O.Nullable)
 
     def createdAt = column[DateTime]("created_at", O.NotNull)
     def updatedAt = column[DateTime]("updated_at", O.Nullable)
