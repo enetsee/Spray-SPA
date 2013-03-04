@@ -42,7 +42,7 @@ trait RememberMeCookieDirectives {
   private def decode(content:String): Option[(RememberId,String,String)]= try {
     content.split(":").toList match {
       case List(id,seriesToken,rememberToken) => Some((ev.fromString(id),seriesToken,rememberToken))
-      case _ => Some((ev.fromString("-1"),"",""))
+      case _ => None
     }
   } catch {
     case scala.util.control.NonFatal(_) => None
