@@ -1,13 +1,18 @@
-﻿define(['services/logger'], function (logger) {
-    var vm = {
-        activate: activate,
-        title: 'View 1',
+﻿define(['services/logger','durandal/app','viewmodels/account'], function (logger,app,Account) {
+
+    function vm() {
+        // Data
+        var self = this;
+        self.title = 'View 1';
+
+        self.activate = function() {
+            logger.log('View 1 activated', null, 'view1');
+            return true;
+        };
     };
 
-    return vm;
+    return (new vm());
 
-    function activate() {
-        logger.log('View 1 activated', null, 'view1');
-        return true;
-    }
+
+
 });

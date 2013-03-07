@@ -1,0 +1,23 @@
+<form id="account-general-form">
+    <fieldset>
+        <div class="control-group" data-bind="validationElement: $root.accountName">
+            <div class="controls">
+                <div class="input-prepend">
+                    <span class="add-on"><i class="icon-user"></i></span>
+                    <input class="span4" id="name" type="text" placeholder="your name" data-bind="value: $root.accountName(), event: { change: updateName }" autofocus="autofocus">
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group" >
+            <div class="controls">
+                <div class="input-prepend" data-bind="validationElement: $root.email">
+                    <span class="add-on"><i class="icon-envelope"></i></span>
+                    <input class="span4" id="email" type="email" placeholder="email address" data-bind="value: $root.email(),  event: { change: updateEmail }">
+                </div>
+            </div>
+        </div>
+
+        <a class="btn" href="#" data-bind="click: $root.showPasswordDialog">Change Password...</a>
+    </fieldset>
+</form>

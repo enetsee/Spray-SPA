@@ -10,19 +10,22 @@ import akka.pattern.CircuitBreaker
 
 import com.example.storage.Storage
 import com.example.domain.{Account, Password}
+import domain.EmailModule._
+import domain.NameModule._
+
 
 object StorageActor {
   trait StorageProtocolMessage
 
   case class CreateAccount(account: Account) extends StorageProtocolMessage // => Account
 
-  case class RetrieveAccountByEmail(email: String) extends StorageProtocolMessage // => Option[Account]
+  case class RetrieveAccountByEmail(email: Email) extends StorageProtocolMessage // => Option[Account]
   case class RetrieveAccount(accountId: Long) extends StorageProtocolMessage // => Option[Account]
 
   case class UpdateAccount(account: Account) extends StorageProtocolMessage // => Int
   case class UpdateAccountPassword(accountId: Long, newPassword: Password) extends StorageProtocolMessage // => Int
-  case class UpdateAccountEmail(accountId: Long, newEmail: String) extends StorageProtocolMessage // => Int
-  case class UpdateAccountName(accountId: Long, newName: String) extends StorageProtocolMessage // => Int
+  case class UpdateAccountEmail(accountId: Long, newEmail: Email) extends StorageProtocolMessage // => Int
+  case class UpdateAccountName(accountId: Long, newName: Name) extends StorageProtocolMessage // => Int
 
 
   case class DeleteAccount(accountId: Long) extends StorageProtocolMessage // => Int

@@ -3,9 +3,9 @@ package storage
 
 import java.util.UUID
 import spray.http.{HttpIp, DateTime}
-import domain.{HttpIpTypeMapper, DateTimeTypeMapper, Password, Account}
-
-
+import domain._
+import EmailModule._
+import NameModule._
 
 
 trait AccountStorage extends DateTimeTypeMapper with HttpIpTypeMapper {
@@ -17,8 +17,8 @@ trait AccountStorage extends DateTimeTypeMapper with HttpIpTypeMapper {
   object Accounts extends Table[Account]("accounts") {
     
     def id = column[Long]("id", O.PrimaryKey, O.AutoInc)
-    def name = column[String]("name", O.NotNull)
-    def email = column[String]("email", O.NotNull)
+    def name = column[Name]("name", O.NotNull)
+    def email = column[Email]("email", O.NotNull)
 
     def password = column[Password]("password", O.NotNull)
 
@@ -64,7 +64,7 @@ trait AccountStorage extends DateTimeTypeMapper with HttpIpTypeMapper {
 
 
 
-  private def qRetrieveAccountByEmail(email: String)(implicit session: Session) =
+  private def qRetrieveAccountByEmail(email: Email)(implicit session: Session) =
     for { account <- Accounts if (account.email is email) } yield account
 
   private def qRetrieveAccountPassword(id: Long)(implicit session: Session) =
@@ -94,7 +94,7 @@ trait AccountStorage extends DateTimeTypeMapper with HttpIpTypeMapper {
     val seriesToken = UUID.randomUUID().toString
     val createdAt = account.createdAt.getOrElse(DateTime.now)
 
-    val id = Accounts.autoInc.insert(account.name, account.email.toLowerCase, pw, publicKey, privateKey, createdAt, seriesToken, rememberToken, 0, 0)
+    val id = Accounts.autoInc.insert(account.name, account.email, pw, publicKey, privateKey, createdAt, seriesToken, rememberToken, 0, 0)
     account.copy(id = Some(id), password = pw, publicKey = Some(publicKey), privateKey=Some(privateKey),  createdAt = Some(createdAt))
   }
 
@@ -105,8 +105,8 @@ trait AccountStorage extends DateTimeTypeMapper with HttpIpTypeMapper {
   def retrieveAccountPassword(id: Long)(implicit session: Session) =
     qRetrieveAccountPassword(id).firstOption
 
-  def retrieveAccountByEmail(email: String)(implicit session: Session) =
-    qRetrieveAccountByEmail(email.toLowerCase).firstOption
+  def retrieveAccountByEmail(email: Email)(implicit session: Session) =
+    qRetrieveAccountByEmail(email).firstOption
 
 
 
@@ -116,11 +116,11 @@ trait AccountStorage extends DateTimeTypeMapper with HttpIpTypeMapper {
   def updateAccountPassword(id: Long, password: Password)(implicit session: Session) =
     qRetrieveAccountPassword(id).update(Password.encrypt(SiteSettings.EncryptionLogRounds)(password))
 
-  def updateAccountEmail(id: Long, email: String)(implicit session: Session) =
+  def updateAccountEmail(id: Long, email: Email)(implicit session: Session) =
     qRetrieveAccountEmail(id).update(email)
 
-  def updateAccountName(id: Long, login: String)(implicit session: Session) =
-    qRetrieveAccountName(id).update(login)
+  def updateAccountName(id: Long, name: Name)(implicit session: Session) =
+    qRetrieveAccountName(id).update(name)
 
   def deleteAccount(id: Long)(implicit session: Session) =
     qRetrieveAccount(id).delete

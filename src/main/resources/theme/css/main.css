@@ -7,7 +7,7 @@ html, body {
     min-height: 100%;
     height: auto !important;
     height: 100%;
-    margin: 0 auto -60px;
+    margin: 0 auto -120px;
 }
 
 #wrap > .container {
@@ -15,18 +15,78 @@ html, body {
 }
 
 
+.pad {
+    padding-right:8px;
+}
+
 #applicationHost {
     min-height: 100%;
     height: auto !important;
     height: 100%;
-    margin: 0 auto -60px;
+    margin: 0 auto -120px;
 }
 
-#applicationHost > .container {
-    padding-top: 60px;
+.private-key-well {
+    position: relative;
+    margin: 15px 0;
+    padding: 39px 19px 14px;
+    background-color: #efefef;
+    border: 1px solid #ddd;
+    color: #343434;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
 }
 
-#push, #footer { height: 60px; }
+.private-key-well:after {
+    content: "Private Key";
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    padding: 3px 7px;
+    font-size: 12px;
+    font-weight: bold;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    color: #9da0a4;
+    -webkit-border-radius: 4px 0 4px 0;
+    -moz-border-radius: 4px 0 4px 0;
+    border-radius: 4px 0 4px 0;
+}
+
+
+.public-key-well {
+    position: relative;
+    margin: 15px 0;
+    padding: 39px 19px 14px;
+    background-color: #efefef;
+    color: #343434;
+    border: 1px solid #ddd;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+}
+
+
+.public-key-well:after {
+    content: "Public Key";
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    padding: 3px 7px;
+    font-size: 12px;
+    font-weight: bold;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    color: #9da0a4;
+    -webkit-border-radius: 4px 0 4px 0;
+    -moz-border-radius: 4px 0 4px 0;
+    border-radius: 4px 0 4px 0;
+}
+
+
+
+#push, #footer { height: 120px; }
 #footer { background-color: #efefef; }
 
 @media (max-width: 767px) {
@@ -66,8 +126,8 @@ html, body {
 }
 
 .account-modal {
-    width: 580px;
-    height: 280px;
+    width: 400px;
+    min-height:230px;
 }
 
 .engraved {
@@ -112,6 +172,10 @@ a:hover {
 	-moz-transition: opacity 0.1s linear;
 	-o-transition: opacity 0.1s linear;
 	transition: opacity 0.1s linear;
+}
+
+.modalHeader {
+    background-color: #efefef;
 }
 
 .messageBox {

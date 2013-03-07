@@ -23,7 +23,7 @@
     }
 
     var modalDialog = {
-        currentZIndex: 1000,
+        currentZIndex: 2000,
         getNextZIndex: function () {
             return ++this.currentZIndex;
         },
@@ -95,8 +95,9 @@
     };
 
     modalDialog.addContext('default', {
-        blockoutOpacity: .2,
+        blockoutOpacity: .25,
         removeDelay: 200,
+
         addHost: function(modal) {
             var body = $('body');
             var blockout = $('<div class="modalBlockout"></div>')
@@ -123,6 +124,7 @@
                 $("#simplemodal-overlay").css("width", newBodyOuterWidth + "px");
             }
         },
+
         removeHost: function(modal) {
             $(modal.host).css('opacity', 0);
             $(modal.blockout).css('opacity', 0);
@@ -139,6 +141,7 @@
                 $("body").css("margin-right", modal.oldBodyMarginRight);
             }
         },
+
         afterCompose: function(parent, newChild, settings) {
             var $child = $(newChild);
             var width = $child.width();

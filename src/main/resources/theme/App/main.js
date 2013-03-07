@@ -9,6 +9,9 @@ define(['durandal/app', 'durandal/viewLocator', 'durandal/system', 'durandal/plu
     system.debug(true);
 
     app.start().then(function () {
+
+        var accountId =
+
         router.handleInvalidRoute = function (route, params) {
             logger.logError('No Route Found', route, 'main');
         };

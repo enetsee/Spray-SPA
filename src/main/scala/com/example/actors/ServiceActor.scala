@@ -9,18 +9,19 @@ import spray.http.{HttpIp, MediaTypes, StatusCodes}
 
 
 import com.example.directives.{SessionCookieDirectives, RememberMeCookieDirectives, CustomMiscDirectives}
-import domain.{Account, AccountOps}
-import domain.ajax.{AjaxResultJsonProtocol, AjaxResult}
-import domain.Password.ClearText
+import domain.AccountOps
+import domain.NameModule._
+import domain.EmailModule._
+import domain.ajax._
+import html._
 import cookies.RememberMeCookie
 import cookies.SessionCookie
-import html._
-
 
 
 
 class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor with TwirlSupport with SprayJsonSupport
-  with CustomMiscDirectives with SessionCookieDirectives with Directives with RememberMeCookieDirectives with AccountOps with AjaxResultJsonProtocol   {
+  with CustomMiscDirectives with SessionCookieDirectives with Directives with RememberMeCookieDirectives with AccountOps
+  with AjaxResultJsonProtocol with AjaxSignInJsonProtocol with AjaxSignUpJsonProtocol with AjaxUpdatePasswordJsonProtocol   {
 
   // There is almost certainly a better way of doing this:
   // RememberMeCookie[T] requires the RememberMeCookieDirectives trait
@@ -34,6 +35,8 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
 
 
   def route = dynamicIf(SiteSettings.DevMode) {
+
+
       get {
           getFromResourceDirectory("theme") ~
           path("") {
@@ -42,7 +45,7 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
             } ~ rememberMeCookie { remember =>                                                       // No session cookie, look for a remember-me cookie
               optionalClientIP { ipOpt =>
                 authenticate(authenticateRememberMe(remember,ipOpt)) { account =>                        // Authenticate sign-in attempt with remember-me cookie
-                  setSession(SessionCookie(path=Some("/"))) {                                         // Set session cookie
+                  setSession(SessionCookie(data=Map(("id"-> account.id.get.toString)),path=Some("/"))) {                                         // Set session cookie
                     setRememberMe(RememberMeCookie(id=account.id.get,                                 // Set a  new remember me cookie with rolled token
                       seriesToken=account.seriesToken.get,
                       rememberToken=account.rememberToken.get,path=Some("/"))){
@@ -61,50 +64,75 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
 
 
 
+
       } ~  pathPrefix("ajax") {
         respondWithMediaType(MediaTypes.`application/json`) {
           handleRejections(ajaxRejectionHandler) {                                                   // wrap the inner route with rejection & exception
             handleExceptions(ajaxExceptionHandler) {                                                 // handler providing error messages in an 'AjaxResponse'
-              (path("signup") & post) {                                                              // ajax sign-up
-                formFields('name,'email,'password) {
-                  (name,email,password) =>
-                    validateFuture(retrieveAccountByEmail(email).map(_.isEmpty) ,                    // check the email address does not already exist
-                      "Email address is already registered to another account." ) {
-                        setSession(SessionCookie(path=Some("/"))) {
-                          complete {
-                            createAccount(Account(name=name,email=email,password=ClearText(password))). // Create account...
-                            map(ac => AjaxResult(true,Some(ac.id.get),Some("/"),List.empty))            // since this the ajax route we don't return the resource
-                          }
-                        }
+
+              (path("signup") & post) {                                                              // * ajax sign-up
+                entity(as[AjaxSignUp]) { signUp =>
+                  validateFuture(retrieveAccountByEmail(signUp.email).map(_.isEmpty) ,                    // check the email address does not already exist
+                    "The email address you provided is already registered to another account." ) {
+                    provideFuture(createAccount(signUp)) { account =>
+                      setSession(SessionCookie(data=Map(("id"-> account.id.get.toString)),path=Some("/"))) {
+                        complete(StatusCodes.Created,account)
+                      }
                     }
+                  }
                 }
 
-
-            } ~ (path("signin") & post) {                                                          // ajax sign-in
-              formFields('email,'password,'remember.as[Boolean]?) {
-                (email,password,remember) =>
+              } ~ (path("signin") & post) {                                                           // * ajax sign-in
+                entity(as[AjaxSignIn]) { signIn =>
                   optionalClientIP { ipOpt =>
-                    authenticate( authenticateAccount(email,ClearText(password),ipOpt)) { account =>
-                      setSession(SessionCookie(path=Some("/"))) {                                    // Set session cookie
-                        conditional(remember.getOrElse(false),
+                    authenticate(authenticateAccount(retrieveAccountByEmail(signIn.email),signIn.password,ipOpt)) { account =>
+                      setSession(SessionCookie(data=Map(("id"-> account.id.get.toString)),path=Some("/"))) {
+                        conditional(signIn.rememberMe,
                           setRememberMe(                                                             // Set remember-me cookie *if*  it was set on the sign-in form
                             RememberMeCookie(id=account.id.get,
                             seriesToken=account.seriesToken.get,
                             rememberToken=account.rememberToken.get,
                             path=Some("/")))) {
-                              complete { AjaxResult(true,Some(account.id.get),Some("/"),List.empty) }
+                              complete (StatusCodes.OK, account)
                         }
                       }
                     }
                   }
-               }
-
-
-              } ~ (path("signout") & post ) {                                                        // sign-out
+                }
+              } ~ (path("signout") & post ) {                                                        // * ajax sign-out
                 (deleteSession(path="/") & deleteRememberMe(path="/")) {                             // Delete the session & remember me cookie
                       complete { AjaxResult(true, (None: Option[Int]),Some("/signin"),List.empty) }  // Redirect to somewhere else...
                 }
+              }  ~ pathPrefix("account") {
+                sessionCookie { session =>
+                  val accountId = session("id").toLong
 
+
+                  (path("") & get) {
+                    complete (StatusCodes.OK, retrieveAccount(accountId) )
+                  } ~ put {
+                    path("name") {
+                      entity(as[Name]) { newName =>
+                        updateAccountName(accountId,newName)
+                        complete  (StatusCodes.Accepted)
+                      }
+                    } ~ path("email") {
+                      entity(as[Email]) { newEmail =>
+                        updateAccountEmail(accountId,newEmail)
+                        complete  (StatusCodes.Accepted)
+                      }
+                    } ~ path("password") {
+                      entity(as[AjaxUpdatePassword]) { cp =>
+                        authenticate(authenticateAccount(retrieveAccount(accountId),cp.password,None) ) { account =>
+                          updateAccountPassword(accountId,cp.newPassword)
+                          complete  (StatusCodes.Accepted)
+                        }
+                      }
+                    }
+                  }
+
+
+                }
               }
             }
           }
@@ -115,10 +143,14 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
 
   val ajaxRejectionHandler =
     RejectionHandler.fromPF {
-      case AuthenticationFailedRejection(msg)::_ => complete { AjaxResult(false,None: Option[Int],None,List(msg))}
+      case AuthenticationFailedRejection(msg)::_ =>
+        complete(StatusCodes.Unauthorized,AjaxResult(false,None: Option[Int],None,List(msg)))
+
       case ls if ls.exists({ case ValidationRejection(_) => true}) =>
         val msgs = ls.collect({case ValidationRejection(ls) => ls})
-        complete { AjaxResult(false,None: Option[Int],None, msgs)}
+        complete(StatusCodes.BadRequest, AjaxResult(false,None: Option[Int],None, msgs))
+
+
     }
 
   def ajaxExceptionHandler =
@@ -126,14 +158,10 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
 
         case _ : CircuitBreakerOpenException =>
           // Circuit breaker has flipped; additional requests will fail fast - let the user know they should probably wait..
-          complete { AjaxResult(false,None:Option[Int],None,
-            List("We are experiencing a temporary problem with our servers; please wait and try again in a few minutes."))
-          }
+          complete(StatusCodes.ServiceUnavailable , AjaxResult(false,None:Option[Int],None,List("We are experiencing a temporary problem with our servers; please wait and try again in a few minutes.")))
 
         case _: Throwable =>
-          complete {
-            AjaxResult(false,None:Option[Int],None,List("There is a problem with our servers; please wait and try again in a few minutes."))
-          }
+          complete(StatusCodes.InternalServerError,AjaxResult(false,None:Option[Int],None,List("There is a problem with our servers; please wait and try again in a few minutes.")))
       }
 
 

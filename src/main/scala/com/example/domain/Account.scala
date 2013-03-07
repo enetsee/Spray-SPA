@@ -17,11 +17,12 @@ import spray.routing.{AuthenticationFailedRejection, ValidationRejection, Author
 
 import actors.{ServiceActor, StorageActor}
 import cookies.RememberMeCookie
-
+import NameModule.Name
+import EmailModule.Email
 
 /// Account type inspired by Snap framework: https://github.com/snapframework/snap/blob/master/src/Snap/Snaplet/Auth/Types.hs
 case class Account(
-  id: Option[Long] = None, name: String, email: String                                      // identity
+  id: Option[Long] = None, name: Name, email: Email                                         // identity
   , password: Password                                                                      // password (stored encrypted)
   , publicKey: Option[String] = None,privateKey: Option[String] = None                      // public & private keys
   , activatedAt: Option[DateTime] = None, suspendedAt: Option[DateTime] = None              // account activation / suspension
@@ -48,11 +49,20 @@ trait AccountOps {
   def retrieveAccount(accountId:Long) : Future[Option[Account]] =
     ask(storage,StorageActor.RetrieveAccount(accountId)).mapTo[Option[Account]]
 
-  def retrieveAccountByEmail(email:String) : Future[Option[Account]] =
+  def retrieveAccountByEmail(email:Email) : Future[Option[Account]] =
     ask(storage,StorageActor.RetrieveAccountByEmail(email)).mapTo[Option[Account]]
 
   def updateAccount(account:Account) : Future[Boolean] =
     ask(storage,StorageActor.UpdateAccount(account)).mapTo[Int].map({ case 0 => false case _ => true})
+
+  def updateAccountName(accountId:Long,newName:Name) : Future[Boolean] =
+    ask(storage,StorageActor.UpdateAccountName(accountId,newName)).mapTo[Int].map({ case 0 => false case _ => true})
+
+  def updateAccountEmail(accountId:Long,newEmail:Email) : Future[Boolean] =
+    ask(storage,StorageActor.UpdateAccountEmail(accountId,newEmail)).mapTo[Int].map({ case 0 => false case _ => true})
+
+  def updateAccountPassword(accountId:Long,newPassword:Password) : Future[Boolean] =
+    ask(storage,StorageActor.UpdateAccountPassword(accountId,newPassword)).mapTo[Int].map({ case 0 => false case _ => true})
 
   def deleteAccount(accountId:Long): Future[Boolean] =
     ask(storage,StorageActor.DeleteAccount(accountId)).mapTo[Int].map({ case 0 => false case _ => true})
@@ -60,20 +70,25 @@ trait AccountOps {
   private def accountUnlocked(account:Account) = account.lockedOutUntil.map(_ <= DateTime.now).getOrElse(true)
 
 
-  def authenticateAccount(email:String,password:Password,ipAddress:Option[HttpIp]) : Future[Authentication[Account]] =
-    retrieveAccountByEmail(email).map({
-      case Some(account) =>
-        if (Password.verify(password,account.password)  && accountUnlocked(account)) {
+
+  def authenticateAccount(accountOpt:Future[Option[Account]],password:Password,ipAddress:Option[HttpIp]) : Future[Authentication[Account]] =
+    accountOpt.map({
+      case Some(account) if accountUnlocked(account) =>
+
+        if (Password.verify(password,account.password)) {
           val updatedAccount = updateAccountSignInSuccess(account,ipAddress)
           updateAccount( updatedAccount )
           Right(updatedAccount)
-
         } else {
           updateAccount( updateAccountSignInFailure(account,ipAddress)  )
-          Left(AuthenticationFailedRejection("Incorrect email or password."))
+          Left(AuthenticationFailedRejection("The password you provided is incorrect."))
         }
+
+      case Some(_) => Left(AuthenticationFailedRejection("Your account is locked; please try again in a few moments."))
       case _ => Left(ValidationRejection("Email address not found."))
     })
+
+
 
   // Based on http://jaspan.com/improved_persistent_login_cookie_best_practice :
   // If the triplet is present, the user is considered authenticated.
@@ -107,6 +122,7 @@ trait AccountOps {
   // Update account to reflect a successful sign in attempt
   def updateAccountSignInSuccess(account:Account,ipAddress:Option[HttpIp]) : Account = account.copy(
       loginCount = account.loginCount+1
+      ,failedLoginCount = 0
       , lastLoginAt = account.currentLoginAt
       , currentLoginAt = Some(DateTime.now)
       , lastLoginIp = account.currentLoginIp
@@ -124,6 +140,7 @@ trait AccountOps {
   // Update account to reflect a successful sign in attempt using a remember-me cookie
   def updateAccountRememberMeSuccess(account:Account,ipAddress:Option[HttpIp]) : Account = account.copy(
     loginCount = account.loginCount+1
+    , failedLoginCount = 0
     , lastLoginAt = account.currentLoginAt
     , currentLoginAt = Some(DateTime.now)
     , lastLoginIp = account.currentLoginIp
@@ -149,14 +166,17 @@ trait AccountOps {
 
 
 trait AccountJsonProtocol extends DefaultJsonProtocol {
+  import NameModule.nameFormat
+  import EmailModule.emailFormat
+
   implicit object accountJsonFormat extends RootJsonFormat[Account] {
 
     def write(account: Account): JsValue = account.id match {
       case Some(id) =>
         JsObject(List(
-          ("id" -> JsNumber(id)),
-          ("name" -> JsString(account.name)),
-          ("email" -> JsString(account.email))
+          ("id" -> account.id.toJson),
+          ("name" -> account.name.toJson),
+          ("email" -> account.email.toJson)
         ))
       case None => throw new SerializationException("Account: cannot serialize an uninitialized account.")
     }

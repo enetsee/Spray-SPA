@@ -4,18 +4,26 @@
     <div class="container" id="signupPanel">
         <form class="form-signin form-horizontal" id="signupForm" action="/ajax/signup" method="post">
             <fieldset>
-                <legend class="form-signin-heading">Sign up</legend>
-                <div class="control-group">
-                    <input type="text" id="signupName"  name="name" class="input-block-level" placeholder="your name">
+                <legend class="form-signin-heading">Sign Up</legend>
+                <div class="control-group" data-bind="validationElement: name">
+                    <input type="text" id="signupName"  name="name" class="input-block-level" placeholder="your name" data-bind="value:name">
                 </div>
-                <div class="control-group">
-                    <input type="text" id="signupEmail" name="email" class="input-block-level" placeholder="email address">
+
+                <div class="control-group" data-bind="validationElement: email">
+                    <input type="email" id="signupEmail" name="email" class="input-block-level" placeholder="email address" data-bind="value: email">
                 </div>
-                <div class="control-group">
-                    <input type="password" id="signupPassword" name="password" class="input-block-level" placeholder="password">
+
+                <div class="control-group" data-bind="validationElement: password">
+                    <input type="password" id="signupPassword" name="password" class="input-block-level" placeholder="password" data-bind="value: password">
                 </div>
-                <button class="btn btn-large btn-block btn-primary" type="submit">Sign up</button>
-                <div class="validation-summary"></div>
+
+                <button class="btn btn-large btn-block btn-primary" type="submit" data-bind="disable: (working || errors().length > 0), click: signUp">Sign up</button>
+
+                <div class="validation-summary" style="margin-top: 10px;">
+                    <ul style='visible:false' data-bind="foreach: alerts, css: {visible: alerts().length > 0}">
+                        <li><div class='alert alert-error' data-bind="text:$data"></div></li>
+                    </ul>
+                </div>
             </fieldset>
             <hr>
             <p class="muted pull-right">Already signed up? <a href="/signin">Sign in</a></p>
@@ -25,4 +33,4 @@
     <div id="push"></div>
 </div>
 @footer()
-@signinScripts()
+@signupScripts()
