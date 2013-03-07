@@ -12,7 +12,7 @@ The project includes some boilerplate around account management; in particular:
 - 	session cookies (based on [Play](https://github.com/playframework/Play20) session cookies)
 -	persistent login ('remember-me') cookies (with an approach based on [Improved Persistent Login Cookie Best Practice](http://jaspan.com/improved_persistent_login_cookie_best_practice))
 
-The project uses [Slick](http://slick.typesafe.com/) for persistence, an approach demonstrated in the excellent [S4](https://github.com/jacobus/s4)starter project, and [Twirl](https://github.com/spray/twirl) for templating.
+The project uses [Slick](http://slick.typesafe.com/) for persistence, an approach demonstrated in the excellent [S4](https://github.com/jacobus/s4) starter project, and [Twirl](https://github.com/spray/twirl) for templating.
 
 The client side app is built with [Durandal.js](http://durandaljs.com/) which itself is built on [Knockout.js](knockoutjs.com), [Require.js](http://requirejs.org/) and the ubiquitous [jQuery](http://jquery.com/). I know next to nothing about javascript MVC frameworks so I took the approach of just picking one and working with it (and Durandal was suprisingly painless).
 
