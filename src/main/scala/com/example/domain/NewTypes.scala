@@ -37,6 +37,7 @@ object NameModule {
   implicit val nameTypeMapper = MappedTypeMapper.base[Name, String](
   { case name : Name => name.toString },
   { case name : String => Name(name) })
+
 }
 
 

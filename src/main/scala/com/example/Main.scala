@@ -26,10 +26,10 @@ object Boot extends App {
   val store = new Store(H2Driver, Database.forURL("jdbc:h2:tcp://localhost/~/example", driver = "org.h2.Driver", user="sa"))
   store.createDB(store.session)
   val storage = system.actorOf(Props( new StorageActor(store) ),"storage")
-
+  log.info("Started storage actor: " + storage.path.toStringWithAddress(storage.path.address))
 
   log.info("Starting service actor and http server.")
-  val service = system.actorOf(Props( new ServiceActor(storage) ),"service")
+  val service = system.actorOf(Props[ServiceActor],"service")
 
   val httpServer = system.actorOf(
     Props(new HttpServer(ioBridge,SingletonHandler(service))),

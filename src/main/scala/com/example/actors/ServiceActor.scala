@@ -19,7 +19,7 @@ import cookies.SessionCookie
 
 
 
-class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor with TwirlSupport with SprayJsonSupport
+class ServiceActor extends Actor with HttpServiceActor with TwirlSupport with SprayJsonSupport
   with CustomMiscDirectives with SessionCookieDirectives with Directives with RememberMeCookieDirectives with AccountOps
   with AjaxResultJsonProtocol with AjaxSignInJsonProtocol with AjaxSignUpJsonProtocol with AjaxUpdatePasswordJsonProtocol   {
 
@@ -29,6 +29,7 @@ class ServiceActor(val storage: ActorRef) extends Actor with HttpServiceActor wi
   type RememberId = Long
   implicit val ev = util.AsString.longAsString
 
+  val storage = context.actorFor("../storage")
   def receive = runRoute(route)
 
 
