@@ -1,7 +1,7 @@
 package com.example
 
 
-import actors.{ServiceActor, StorageActor}
+import actors.{ChatActor, ServiceActor, StorageActor}
 import akka.actor._
 
 import slick.driver.H2Driver
@@ -26,7 +26,10 @@ object Boot extends App {
   val store = new Store(H2Driver, Database.forURL("jdbc:h2:tcp://localhost/~/example", driver = "org.h2.Driver", user="sa"))
   store.createDB(store.session)
   val storage = system.actorOf(Props( new StorageActor(store) ),"storage")
-  log.info("Started storage actor: " + storage.path.toStringWithAddress(storage.path.address))
+
+
+  log.info("Starting chat actor.")
+  val chat = system.actorOf(Props[ChatActor],"chat")
 
   log.info("Starting service actor and http server.")
   val service = system.actorOf(Props[ServiceActor],"service")

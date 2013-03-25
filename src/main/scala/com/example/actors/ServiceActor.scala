@@ -1,12 +1,24 @@
 package com.example
 package actors
 
-import akka.actor.{Actor, ActorRef}
-import akka.pattern.CircuitBreakerOpenException
-import spray.routing._
-import spray.httpx.{SprayJsonSupport, TwirlSupport}
-import spray.http.{HttpIp, MediaTypes, StatusCodes}
+import scala.concurrent.duration.Duration
 
+import akka.actor.{Actor, ActorRef, Props, ReceiveTimeout}
+import akka.pattern.CircuitBreakerOpenException
+
+
+import spray.http.HttpHeaders.{`Cache-Control`, `Connection`}
+import spray.http.CacheDirectives.{`no-cache`}
+import spray.http.MediaTypes.CustomMediaType
+import spray.http._
+
+import spray.httpx.{SprayJsonSupport, TwirlSupport}
+import spray.routing._
+import spray.can.server.HttpServer
+import spray.routing.RequestContext
+import spray.routing.AuthenticationFailedRejection
+import spray.routing.ValidationRejection
+import spray.util.SprayActorLogging
 
 import com.example.directives.{SessionCookieDirectives, RememberMeCookieDirectives, CustomMiscDirectives}
 import domain.AccountOps
@@ -14,9 +26,15 @@ import domain.NameModule._
 import domain.EmailModule._
 import domain.ajax._
 import html._
-import cookies.RememberMeCookie
 import cookies.SessionCookie
-
+import cookies.RememberMeCookie
+import cookies.RememberMeCookie
+import scala.Some
+import spray.http.HttpResponse
+import cookies.SessionCookie
+import spray.routing.RequestContext
+import spray.routing.AuthenticationFailedRejection
+import spray.routing.ValidationRejection
 
 
 class ServiceActor extends Actor with HttpServiceActor with TwirlSupport with SprayJsonSupport
@@ -30,9 +48,8 @@ class ServiceActor extends Actor with HttpServiceActor with TwirlSupport with Sp
   implicit val ev = util.AsString.longAsString
 
   val storage = context.actorFor("../storage")
+  val chat = context.actorFor("../chat")
   def receive = runRoute(route)
-
-
 
 
   def route = dynamicIf(SiteSettings.DevMode) {
@@ -134,8 +151,19 @@ class ServiceActor extends Actor with HttpServiceActor with TwirlSupport with Sp
 
 
                 }
+              } ~ path("chat") {
+                entity(as[ChatActor.ChatMessage]) { msg =>
+                  chat ! msg
+                  complete(StatusCodes.Accepted)
+                }
               }
             }
+          }
+        }
+      } ~ (get & pathPrefix("streaming")) {
+        respondAsEventStream {
+          path("chat") { ctx =>
+            chat ! ChatActor.AddListener(actorRefFactory.actorOf(Props(new SSEActor(ctx))))
           }
         }
       }
@@ -164,6 +192,22 @@ class ServiceActor extends Actor with HttpServiceActor with TwirlSupport with Sp
         case _: Throwable =>
           complete(StatusCodes.InternalServerError,AjaxResult(false,None:Option[Int],None,List("There is a problem with our servers; please wait and try again in a few minutes.")))
       }
+
+
+  val `text/event-stream` = CustomMediaType("text/event-stream")
+  MediaTypes.register(`text/event-stream`)
+
+  def respondAsEventStream =
+    respondWithHeader(`Cache-Control`(`no-cache`)) &
+      respondWithHeader(`Connection`("Keep-Alive")) &
+      respondWithMediaType(`text/event-stream`)
+
+
+
+
+
+
+
 
 
 }

@@ -15,6 +15,21 @@ html, body {
 }
 
 
+.chat-message {
+    list-style-type: none;
+    list-style: none;
+    min-width:300px;
+    min-height:24px;
+    background-color: #fafafa;
+    margin-top:4px;
+}
+
+.chat-input {
+    min-width:600px;
+    min-height:72px;
+    box-sizing: border-box;
+}
+
 .pad {
     padding-right:8px;
 }

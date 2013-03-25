@@ -23,10 +23,10 @@
         }
 
         function boot() {
-            router.mapNav('view1');
+            router.mapNav('chat');
             router.mapNav('view2');
             log('App loaded', null);
-            return router.activate('view1');
+            return router.activate('chat');
         }
 
 
