@@ -5,7 +5,7 @@
     </ul>
     </div>
     <div class="chat-input">
-        <span><textarea class="chat-input" type="text" data-bind="value: newChatMessage"></textarea></span>
-        <button data-bind="click: sendChatMessage">send</button>
+        <textarea class="chat-input" type="text" data-bind="value: newChatMessage"></textarea>
+        <input id="chat-button" data-bind="click: sendChatMessage" type="submit"></input>
     </div>
 </div>
